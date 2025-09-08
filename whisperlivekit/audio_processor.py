@@ -78,7 +78,7 @@ class AudioProcessor:
         self.ffmpeg_manager.on_error_callback = handle_ffmpeg_error
         self._ffmpeg_error = None
         
-        self.transcription_queue = asyncio.Queue() if self.args.transcription else None
+        self.transcription_queue = asyncio.Queue()
         self.diarization_queue = asyncio.Queue() if self.args.diarization else None
         self.pcm_buffer = bytearray()
 
