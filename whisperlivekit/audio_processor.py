@@ -61,10 +61,8 @@ class AudioProcessor:
         self.asr = models.asr
         self.tokenizer = models.tokenizer
         self.vac_model = models.vac_model
-        if self.args.vac:
-            self.vac = FixedVADIterator(models.vac_model)
-        else:
-            self.vac = None
+        self.vac = FixedVADIterator(models.vac_model)
+
             
         self.ffmpeg_manager = FFmpegManager(
             sample_rate=self.sample_rate,
@@ -209,12 +207,9 @@ class AudioProcessor:
                     pcm_array = self.convert_pcm_to_float(self.pcm_buffer[:self.max_bytes_per_sec])
                     self.pcm_buffer = self.pcm_buffer[self.max_bytes_per_sec:]
                     
-                    res = None
+                    res = self.vac(pcm_array)
                     end_of_audio = False
                     silence_buffer = None
-                    
-                    if self.args.vac:
-                        res = self.vac(pcm_array)
                     
                     if res is not None:
                         if res.get('end', 0) > res.get('start', 0):

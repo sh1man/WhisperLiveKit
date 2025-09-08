@@ -65,12 +65,6 @@ def parse_args():
         choices=["sortformer", "diart"],
         help="The diarization backend to use.",
     )
-
-    parser.add_argument(
-        "--no-transcription",
-        action="store_true",
-        help="Disable transcription to only see live diarization results.",
-    )
     
     parser.add_argument(
         "--min-chunk-size",
@@ -105,21 +99,7 @@ def parse_args():
         default="auto",
         help="Source language code, e.g. en,de,cs, or 'auto' for language detection.",
     )
-    parser.add_argument(
-        "--task",
-        type=str,
-        default="transcribe",
-        choices=["transcribe", "translate"],
-        help="Transcribe or translate.",
-    )
-    
-    parser.add_argument(
-        "--target-language",
-        type=str,
-        default="",
-        dest="target_language",
-        help="Target language for translation. Not functional yet.",
-    )    
+
 
     parser.add_argument(
         "--backend",
@@ -129,21 +109,8 @@ def parse_args():
         help="Load only this backend for Whisper processing.",
     )
     parser.add_argument(
-        "--no-vac",
-        action="store_true",
-        default=False,
-        help="Disable VAC = voice activity controller.",
-    )
-    parser.add_argument(
         "--vac-chunk-size", type=float, default=0.04, help="VAC sample size in seconds."
     )
-
-    parser.add_argument(
-        "--no-vad",
-        action="store_true",
-        help="Disable VAD (voice activity detection).",
-    )
-    
     parser.add_argument(
         "--buffer_trimming",
         type=str,
@@ -277,10 +244,5 @@ def parse_args():
     )
 
     args = parser.parse_args()
-    
-    args.transcription = not args.no_transcription
-    args.vad = not args.no_vad    
-    delattr(args, 'no_transcription')
-    delattr(args, 'no_vad')
     
     return args

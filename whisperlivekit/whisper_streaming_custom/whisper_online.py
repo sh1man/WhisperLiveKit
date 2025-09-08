@@ -74,11 +74,7 @@ def backend_factory(args):
     )
     e = time.time()
     logger.info(f"done. It took {round(e-t,2)} seconds.")
-
-    # Apply common configurations
-    if getattr(args, "vad", False):  # Checks if VAD argument is present and True
-        logger.info("Setting VAD filter")
-        asr.use_vad()
+    asr.use_vad()
 
     # Create the tokenizer
     if args.buffer_trimming == "sentence":

@@ -7,6 +7,7 @@ except ImportError:
 from whisperlivekit.warmup import warmup_asr, warmup_online
 from argparse import Namespace
 import sys
+import torch
 
 class TranscriptionEngine:
     _instance = None
@@ -32,16 +33,11 @@ class TranscriptionEngine:
             "model_cache_dir": None,
             "model_dir": None,
             "lan": "auto",
-            "task": "transcribe",
-            "target_language": "",
             "backend": "faster-whisper",
-            "vac": True,
             "vac_chunk_size": 0.04,
             "log_level": "DEBUG",
             "ssl_certfile": None,
             "ssl_keyfile": None,
-            "transcription": True,
-            "vad": True,
             # whisperstreaming params:
             "buffer_trimming": "segment",
             "confidence_validation": False,
@@ -67,58 +63,36 @@ class TranscriptionEngine:
 
         config_dict = {**defaults, **kwargs}
 
-        if 'no_transcription' in kwargs:
-            config_dict['transcription'] = not kwargs['no_transcription']
-        if 'no_vad' in kwargs:
-            config_dict['vad'] = not kwargs['no_vad']
-        if 'no_vac' in kwargs:
-            config_dict['vac'] = not kwargs['no_vac']
-        
-        config_dict.pop('no_transcription', None)
-        config_dict.pop('no_vad', None)
-
-        if 'language' in kwargs:
-            config_dict['lan'] = kwargs['language']
-        config_dict.pop('language', None) 
-
         self.args = Namespace(**config_dict)
         
         self.asr = None
         self.tokenizer = None
         self.diarization = None
-        self.vac_model = None
-        
-        if self.args.vac:
-            import torch
-            self.vac_model, _ = torch.hub.load(repo_or_dir="snakers4/silero-vad", model="silero_vad")            
-        
-        if self.args.transcription:
-            if self.args.backend == "simulstreaming": 
-                from whisperlivekit.simul_whisper import SimulStreamingASR
-                self.tokenizer = None
-                simulstreaming_kwargs = {}
-                for attr in ['frame_threshold', 'beams', 'decoder_type', 'audio_max_len', 'audio_min_len', 
-                            'cif_ckpt_path', 'never_fire', 'init_prompt', 'static_init_prompt', 
-                            'max_context_tokens', 'model_path', 'warmup_file', 'preload_model_count', 'disable_fast_encoder']:
-                    if hasattr(self.args, attr):
-                        simulstreaming_kwargs[attr] = getattr(self.args, attr)
-        
-                # Add segment_length from min_chunk_size
-                simulstreaming_kwargs['segment_length'] = getattr(self.args, 'min_chunk_size', 0.5)
-                simulstreaming_kwargs['task'] = self.args.task
-                
-                size = self.args.model
-                self.asr = SimulStreamingASR(
-                    modelsize=size,
-                    lan=self.args.lan,
-                    cache_dir=getattr(self.args, 'model_cache_dir', None),
-                    model_dir=getattr(self.args, 'model_dir', None),
-                    **simulstreaming_kwargs
-                )
+        self.vac_model, _ = torch.hub.load(repo_or_dir="snakers4/silero-vad", model="silero_vad")
 
-            else:
-                self.asr, self.tokenizer = backend_factory(self.args)
-            warmup_asr(self.asr, self.args.warmup_file) #for simulstreaming, warmup should be done in the online class not here
+        if self.args.backend == "simulstreaming":
+            from whisperlivekit.simul_whisper import SimulStreamingASR
+            simulstreaming_kwargs = {}
+            for attr in ['frame_threshold', 'beams', 'decoder_type', 'audio_max_len', 'audio_min_len',
+                        'cif_ckpt_path', 'never_fire', 'init_prompt', 'static_init_prompt',
+                        'max_context_tokens', 'model_path', 'warmup_file', 'preload_model_count', 'disable_fast_encoder']:
+                if hasattr(self.args, attr):
+                    simulstreaming_kwargs[attr] = getattr(self.args, attr)
+
+            # Add segment_length from min_chunk_size
+            simulstreaming_kwargs['segment_length'] = getattr(self.args, 'min_chunk_size', 0.5)
+            simulstreaming_kwargs['task'] = "transcribe"
+            size = self.args.model
+            self.asr = SimulStreamingASR(
+                modelsize=size,
+                lan=self.args.lan,
+                cache_dir=getattr(self.args, 'model_cache_dir', None),
+                model_dir=getattr(self.args, 'model_dir', None),
+                **simulstreaming_kwargs
+            )
+        else:
+            self.asr, self.tokenizer = backend_factory(self.args)
+        warmup_asr(self.asr, self.args.warmup_file) #for simulstreaming, warmup should be done in the online class not here
 
         if self.args.diarization:
             if self.args.diarization_backend == "diart":
@@ -133,14 +107,6 @@ class TranscriptionEngine:
                 self.diarization_model = SortformerDiarization()
             else:
                 raise ValueError(f"Unknown diarization backend: {self.args.diarization_backend}")
-        
-        self.translation_model = None
-        if self.args.target_language:
-            if self.args.language == 'auto':
-                raise Exception('Translation cannot be set with language auto')
-            else:
-                from whisperlivekit.translation.translation import load_model
-                self.translation_model = load_model()
             
         TranscriptionEngine._initialized = True
 
