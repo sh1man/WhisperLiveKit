@@ -29,7 +29,7 @@ class ASRBase:
     def load_model(self, modelsize, cache_dir, model_dir):
         raise NotImplementedError("must be implemented in the child class")
 
-    def transcribe(self, audio, init_prompt=""):
+    def transcribe(self, audio, init_prompt="", language: str = None):
         raise NotImplementedError("must be implemented in the child class")
 
     def use_vad(self):
@@ -64,10 +64,11 @@ class FasterWhisperASR(ASRBase):
         )
         return model
 
-    def transcribe(self, audio: np.ndarray, init_prompt: str = "") -> list:
+    def transcribe(self, audio: np.ndarray, init_prompt: str = "", language: str = None) -> list:
+        lang_to_use = language if language and language != "auto" else self.original_language
         segments, info = self.model.transcribe(
             audio,
-            language=self.original_language,
+            language=lang_to_use,
             initial_prompt=init_prompt,
             beam_size=5,
             word_timestamps=True,

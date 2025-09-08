@@ -24,6 +24,8 @@ class AudioProcessor:
     
     def __init__(self, transcription_engine: TranscriptionEngine, language: str = "auto", **kwargs):
         """Initialize the audio processor with configuration, models, and state."""
+
+        self.language = language
         
         # Audio processing settings
         self.args = transcription_engine.args
@@ -54,9 +56,6 @@ class AudioProcessor:
         
         # Models and processing
         self.asr = transcription_engine.asr
-        self.asr.original_language = language # change language
-        if self.args.backend == "simulstreaming":
-            self.asr
         self.tokenizer = transcription_engine.tokenizer
         self.vac_model = transcription_engine.vac_model
         self.vac = FixedVADIterator(transcription_engine.vac_model)
@@ -302,7 +301,7 @@ class AudioProcessor:
                     
 
                 self.online.insert_audio_chunk(pcm_array, stream_time_end_of_current_pcm)
-                new_tokens, current_audio_processed_upto = self.online.process_iter()
+                new_tokens, current_audio_processed_upto = self.online.process_iter(language=self.language)
                 
                 # Get buffer information
                 _buffer_transcript_obj = self.online.get_buffer()
