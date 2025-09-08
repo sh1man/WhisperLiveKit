@@ -499,6 +499,7 @@ class AudioProcessor:
         
     async def create_tasks(self):
         """Create and start processing tasks."""
+        self.beg_loop = time()
         self.all_tasks_for_cleanup = []
         processing_tasks_for_watchdog = []
 
