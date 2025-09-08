@@ -1,4 +1,6 @@
 import asyncio
+from typing import Optional
+
 import numpy as np
 from time import time, sleep
 import math
