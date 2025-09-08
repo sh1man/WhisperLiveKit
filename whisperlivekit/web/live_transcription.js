@@ -125,6 +125,18 @@ const LANGUAGES = {
     "yue": "cantonese",
 };
 
+function populateLanguageSelect() {
+    const languageSelect = document.getElementById("languageSelect");
+    if (!languageSelect) return;
+
+    for (const [code, name] of Object.entries(LANGUAGES)) {
+        const option = document.createElement("option");
+        option.value = code;
+        option.textContent = name.charAt(0).toUpperCase() + name.slice(1);
+        languageSelect.appendChild(option);
+    }
+}
+
 waveCanvas.width = 60 * (window.devicePixelRatio || 1);
 waveCanvas.height = 30 * (window.devicePixelRatio || 1);
 waveCtx.scale(window.devicePixelRatio || 1, window.devicePixelRatio || 1);
@@ -201,3 +213,4 @@ document.addEventListener('DOMContentLoaded', async () => {
       radio.addEventListener('change', handleSourceChange);
   });
 });
+
