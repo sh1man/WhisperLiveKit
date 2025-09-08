@@ -147,11 +147,11 @@ const hlsUrlInput = document.getElementById("hlsUrlInput");
 function handleSourceChange() {
     const selectedSource = document.querySelector('input[name="input-source"]:checked').value;
     if (selectedSource === 'mic') {
-        micSettings.style.display = 'block';
+        micSettings.style.display = 'flex';
         hlsSettings.style.display = 'none';
     } else {
         micSettings.style.display = 'none';
-        hlsSettings.style.display = 'block';
+        hlsSettings.style.display = 'flex';
     }
 }
 
