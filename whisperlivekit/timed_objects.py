@@ -32,5 +32,5 @@ class SpeakerSegment(TimedText):
     pass
 
 @dataclass
-class Silence():
+class Silence:
     duration: float
