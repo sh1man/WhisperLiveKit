@@ -25,15 +25,26 @@
 
             <div class="settings">
                 <div class="field">
-                    <label for="websocketInput">Websocket URL</label>
-                    <input id="websocketInput" type="text" placeholder="ws://host:port/asr" />
+                    <label>Input Source</label>
+                    <div class="segmented" role="radiogroup" aria-label="Input source selector">
+                        <input type="radio" id="source-mic" name="input-source" value="mic" checked />
+                        <label for="source-mic" title="Microphone">Microphone</label>
+
+                        <input type="radio" id="source-hls" name="input-source" value="hls" />
+                        <label for="source-hls" title="HLS Stream">HLS Stream</label>
+                    </div>
                 </div>
 
-                <div class="field">
+                <div class="field" id="mic-settings">
                     <label id="microphoneSelectLabel" for="microphoneSelect">Select Microphone</label>
                     <select id="microphoneSelect">
                         <option value="">Default Microphone</option>
                     </select>
+                </div>
+
+                <div class="field" id="hls-settings" style="display: none;">
+                    <label for="hlsUrlInput">HLS Stream URL</label>
+                    <input id="hlsUrlInput" type="text" placeholder="https://example.com/stream.m3u8" />
                 </div>
 
                 <div class="field">

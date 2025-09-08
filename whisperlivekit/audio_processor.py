@@ -22,10 +22,11 @@ class AudioProcessor:
     Handles audio processing, state management, and result formatting.
     """
     
-    def __init__(self, transcription_engine: TranscriptionEngine, language: str = "auto", **kwargs):
+    def __init__(self, transcription_engine: TranscriptionEngine, language: str = "auto", mode: str = "mic", hls_url: Optional[str] = None, **kwargs):
         """Initialize the audio processor with configuration, models, and state."""
 
         self.language = language
+        self.mode = mode
         
         # Audio processing settings
         self.args = transcription_engine.args
@@ -63,7 +64,9 @@ class AudioProcessor:
             
         self.ffmpeg_manager = FFmpegManager(
             sample_rate=self.sample_rate,
-            channels=self.channels
+            channels=self.channels,
+            mode=mode,
+            hls_url=hls_url
         )
         
         async def handle_ffmpeg_error(error_type: str):
@@ -601,10 +604,16 @@ class AudioProcessor:
             logger.warning("AudioProcessor is stopping. Ignoring incoming audio.")
             return
 
-        success = await self.ffmpeg_manager.write_data(message)
-        if not success:
-            ffmpeg_state = await self.ffmpeg_manager.get_state()
-            if ffmpeg_state == FFmpegState.FAILED:
-                logger.error("FFmpeg is in FAILED state, cannot process audio")
-            else:
-                logger.warning("Failed to write audio data to FFmpeg")
+        if self.mode == "mic":
+            success = await self.ffmpeg_manager.write_data(message)
+            if not success:
+                ffmpeg_state = await self.ffmpeg_manager.get_state()
+                if ffmpeg_state == FFmpegState.FAILED:
+                    logger.error("FFmpeg is in FAILED state, cannot process audio")
+                else:
+                    logger.warning("Failed to write audio data to FFmpeg")
+        else:
+            # In HLS mode, we don't write data; we just manage state.
+            # A non-empty message could be a "start" signal if needed,
+            # but for now, we just log it.
+            logger.debug("Received data in HLS mode, ignoring.")

@@ -68,11 +68,16 @@ async def handle_websocket_results(websocket, results_generator):
 async def websocket_endpoint(websocket: WebSocket):
     global transcription_engine
     language = websocket.query_params.get("language", "auto")
-    logger.info(f"New WebSocket connection with language: {language}")
+    mode = websocket.query_params.get("mode", "mic")
+    hls_url = websocket.query_params.get("url")
+
+    logger.info(f"New WebSocket connection: lang={language}, mode={mode}, url={hls_url or 'N/A'}")
     
     audio_processor = AudioProcessor(
         transcription_engine=transcription_engine,
-        language=language
+        language=language,
+        mode=mode,
+        hls_url=hls_url
     )
     await websocket.accept()
     logger.info("WebSocket connection opened.")

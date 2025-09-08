@@ -139,6 +139,25 @@ const timerElement = document.querySelector(".timer");
 const themeRadios = document.querySelectorAll('input[name="theme"]');
 const microphoneSelect = document.getElementById("microphoneSelect");
 const languageSelect = document.getElementById("languageSelect");
+const sourceRadios = document.querySelectorAll('input[name="input-source"]');
+const micSettings = document.getElementById("mic-settings");
+const hlsSettings = document.getElementById("hls-settings");
+const hlsUrlInput = document.getElementById("hlsUrlInput");
+
+function handleSourceChange() {
+    const selectedSource = document.querySelector('input[name="input-source"]:checked').value;
+    if (selectedSource === 'mic') {
+        micSettings.style.display = 'block';
+        hlsSettings.style.display = 'none';
+    } else {
+        micSettings.style.display = 'none';
+        hlsSettings.style.display = 'block';
+    }
+}
+
+sourceRadios.forEach(radio => {
+    radio.addEventListener('change', handleSourceChange);
+});
 
 function populateLanguageSelect() {
     if (!languageSelect) return;
@@ -307,26 +326,38 @@ if (chunkSelector) {
 }
 
 // WebSocket input change handling
-websocketInput.addEventListener("change", () => {
-  const urlValue = websocketInput.value.trim();
-  if (!urlValue.startsWith("ws://") && !urlValue.startsWith("wss://")) {
-    statusText.textContent = "Invalid WebSocket URL (must start with ws:// or wss://)";
-    return;
-  }
-  websocketUrl = urlValue;
-  statusText.textContent = "WebSocket URL updated. Ready to connect.";
-});
+if (websocketInput) {
+    websocketInput.addEventListener("change", () => {
+        const urlValue = websocketInput.value.trim();
+        if (!urlValue.startsWith("ws://") && !urlValue.startsWith("wss://")) {
+            statusText.textContent = "Invalid WebSocket URL (must start with ws:// or wss://)";
+            return;
+        }
+        websocketUrl = urlValue;
+        statusText.textContent = "WebSocket URL updated. Ready to connect.";
+    });
+}
 
 function setupWebSocket() {
   return new Promise((resolve, reject) => {
     try {
-      let url = websocketUrl;
-      if (selectedLanguage !== "auto") {
-        const currentUrl = new URL(url);
+        const selectedSource = document.querySelector('input[name="input-source"]:checked').value;
+        const currentUrl = new URL(websocketUrl);
+
         currentUrl.searchParams.set("language", selectedLanguage);
-        url = currentUrl.toString();
-      }
-      websocket = new WebSocket(url);
+        currentUrl.searchParams.set("mode", selectedSource);
+
+        if (selectedSource === 'hls') {
+            const hlsUrl = hlsUrlInput.value.trim();
+            if (!hlsUrl) {
+                statusText.textContent = "HLS Stream URL cannot be empty.";
+                reject(new Error("HLS URL is empty"));
+                return;
+            }
+            currentUrl.searchParams.set("url", hlsUrl);
+        }
+        
+        websocket = new WebSocket(currentUrl.toString());
     } catch (error) {
       statusText.textContent = "Invalid WebSocket URL. Please check and try again.";
       reject(error);
@@ -624,6 +655,8 @@ async function startRecording() {
 }
 
 async function stopRecording() {
+  const selectedSource = document.querySelector('input[name="input-source"]:checked').value;
+
   if (wakeLock) {
     try {
       await wakeLock.release();
@@ -637,12 +670,13 @@ async function stopRecording() {
   waitingForStop = true;
 
   if (websocket && websocket.readyState === WebSocket.OPEN) {
+    // For both mic and HLS, sending an empty message signals the end.
     const emptyBlob = new Blob([], { type: "audio/webm" });
     websocket.send(emptyBlob);
-    statusText.textContent = "Recording stopped. Processing final audio...";
+    statusText.textContent = "Processing final audio...";
   }
 
-  if (recorder) {
+  if (selectedSource === 'mic' && recorder) {
     recorder.stop();
     recorder = null;
   }
@@ -682,27 +716,34 @@ async function stopRecording() {
 }
 
 async function toggleRecording() {
-  if (!isRecording) {
-    if (waitingForStop) {
-      console.log("Waiting for stop, early return");
-      return;
+    const selectedSource = document.querySelector('input[name="input-source"]:checked').value;
+
+    if (!isRecording) {
+        if (waitingForStop) {
+            console.log("Waiting for stop, early return");
+            return;
+        }
+        console.log("Connecting to WebSocket");
+        try {
+            await setupWebSocket();
+            if (selectedSource === 'mic') {
+                await startRecording();
+            } else {
+                // For HLS, just connecting is enough to start.
+                // The server handles the stream. We'll simulate recording state.
+                isRecording = true;
+                startTime = Date.now();
+                timerInterval = setInterval(updateTimer, 1000);
+                updateUI();
+            }
+        } catch (err) {
+            statusText.textContent = "Could not connect to WebSocket or access mic. Aborted.";
+            console.error(err);
+        }
+    } else {
+        console.log("Stopping recording");
+        stopRecording();
     }
-    console.log("Connecting to WebSocket");
-    try {
-      if (websocket && websocket.readyState === WebSocket.OPEN) {
-        await startRecording();
-      } else {
-        await setupWebSocket();
-        await startRecording();
-      }
-    } catch (err) {
-      statusText.textContent = "Could not connect to WebSocket or access mic. Aborted.";
-      console.error(err);
-    }
-  } else {
-    console.log("Stopping recording");
-    stopRecording();
-  }
 }
 
 function updateUI() {

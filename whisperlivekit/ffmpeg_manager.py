@@ -35,9 +35,11 @@ class FFmpegState(Enum):
     FAILED = "failed"
 
 class FFmpegManager:
-    def __init__(self, sample_rate: int = 16000, channels: int = 1):
+    def __init__(self, sample_rate: int = 16000, channels: int = 1, mode: str = "mic", hls_url: Optional[str] = None):
         self.sample_rate = sample_rate
         self.channels = channels
+        self.mode = mode
+        self.hls_url = hls_url
 
         self.process: Optional[asyncio.subprocess.Process] = None
         self._stderr_task: Optional[asyncio.Task] = None
@@ -47,6 +49,26 @@ class FFmpegManager:
         self.state = FFmpegState.STOPPED
         self._state_lock = asyncio.Lock()
 
+    def _build_command(self):
+        if self.mode == "hls":
+            if not self.hls_url:
+                raise ValueError("HLS mode selected but no HLS URL provided.")
+            input_source = self.hls_url
+        else: # mic mode
+            input_source = "pipe:0"
+
+        return [
+            "ffmpeg",
+            "-hide_banner",
+            "-loglevel", "error",
+            "-i", input_source,
+            "-f", "s16le",
+            "-acodec", "pcm_s16le",
+            "-ac", str(self.channels),
+            "-ar", str(self.sample_rate),
+            "pipe:1"
+        ]
+
     async def start(self) -> bool:
         async with self._state_lock:
             if self.state != FFmpegState.STOPPED:
@@ -55,21 +77,11 @@ class FFmpegManager:
             self.state = FFmpegState.STARTING
 
         try:
-            cmd = [
-                "ffmpeg",
-                "-hide_banner",
-                "-loglevel", "error",
-                "-i", "pipe:0",
-                "-f", "s16le",
-                "-acodec", "pcm_s16le",
-                "-ac", str(self.channels),
-                "-ar", str(self.sample_rate),
-                "pipe:1"
-            ]
-
+            cmd = self._build_command()
+            
             self.process = await asyncio.create_subprocess_exec(
                 *cmd,
-                stdin=asyncio.subprocess.PIPE,
+                stdin=asyncio.subprocess.PIPE if self.mode == "mic" else None,
                 stdout=asyncio.subprocess.PIPE,
                 stderr=asyncio.subprocess.PIPE
             )
