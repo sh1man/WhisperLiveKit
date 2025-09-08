@@ -219,13 +219,13 @@ class AudioProcessor:
                             silence_buffer = Silence(duration=time() - self.start_silence)
                             
                     if silence_buffer:
-                        if self.args.transcription and self.transcription_queue:
+                        if self.transcription_queue:
                             await self.transcription_queue.put(silence_buffer)
                         if self.args.diarization and self.diarization_queue:
                             await self.diarization_queue.put(silence_buffer)
 
                     if not self.silence:                            
-                        if self.args.transcription and self.transcription_queue:
+                        if self.transcription_queue:
                             await self.transcription_queue.put(pcm_array.copy())
 
                         if self.args.diarization and self.diarization_queue:
@@ -235,10 +235,6 @@ class AudioProcessor:
                         if end_of_audio:
                             self.silence = True
                             self.start_silence = time()
-
-                    # Sleep if no processing is happening
-                    if not self.args.transcription and not self.args.diarization:
-                        await asyncio.sleep(0.1)
                     
                     
                     
@@ -253,7 +249,7 @@ class AudioProcessor:
                     break
         
         logger.info("FFmpeg stdout processing finished. Signaling downstream processors.")
-        if self.args.transcription and self.transcription_queue:
+        if self.transcription_queue:
             await self.transcription_queue.put(SENTINEL)
             logger.debug("Sentinel put into transcription_queue.")
         if self.args.diarization and self.diarization_queue:
@@ -417,7 +413,7 @@ class AudioProcessor:
                 sep = state["sep"]
                                 
                 # Add dummy tokens if needed
-                if (not tokens or tokens[-1].is_dummy) and not self.args.transcription and self.args.diarization:
+                if (not tokens or tokens[-1].is_dummy) and not True and self.args.diarization:
                     await self.add_dummy_token()
                     sleep(0.5)
                     state = await self.get_current_state()
@@ -484,7 +480,7 @@ class AudioProcessor:
                 # Check for termination condition
                 if self.is_stopping:
                     all_processors_done = True
-                    if self.args.transcription and self.transcription_task and not self.transcription_task.done():
+                    if self.transcription_task and not self.transcription_task.done():
                         all_processors_done = False
                     if self.args.diarization and self.diarization_task and not self.diarization_task.done():
                         all_processors_done = False
@@ -521,7 +517,7 @@ class AudioProcessor:
                 }
             return error_generator()
 
-        if self.args.transcription and self.online:
+        if self.online:
             self.transcription_task = asyncio.create_task(self.transcription_processor())
             self.all_tasks_for_cleanup.append(self.transcription_task)
             processing_tasks_for_watchdog.append(self.transcription_task)
