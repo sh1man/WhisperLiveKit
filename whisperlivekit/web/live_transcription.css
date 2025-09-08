@@ -211,7 +211,8 @@ body {
 #websocketInput,
 #themeSelector,
 #microphoneSelect,
-#languageSelect {
+#languageSelect,
+#hlsUrlInput {
   font-size: 16px;
   padding: 5px 8px;
   border-radius: 8px;
@@ -232,7 +233,8 @@ body {
 #websocketInput:focus,
 #themeSelector:focus,
 #microphoneSelect:focus,
-#languageSelect:focus {
+#languageSelect:focus,
+#hlsUrlInput:focus {
   outline: none;
   border-color: #007bff;
   box-shadow: 0 0 0 3px rgba(0, 123, 255, 0.15);
@@ -453,7 +455,8 @@ label {
   
   #websocketInput,
   #microphoneSelect,
-  #languageSelect {
+  #languageSelect,
+  #hlsUrlInput {
     min-width: 100px;
     max-width: 160px;
   }
@@ -480,7 +483,8 @@ label {
   
   #websocketInput,
   #microphoneSelect,
-  #languageSelect{
+  #languageSelect,
+  #hlsUrlInput {
     max-width: 140px;
   }
   
