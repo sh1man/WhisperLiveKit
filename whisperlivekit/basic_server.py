@@ -67,8 +67,12 @@ async def handle_websocket_results(websocket, results_generator):
 @app.websocket("/asr")
 async def websocket_endpoint(websocket: WebSocket):
     global transcription_engine
+    language = websocket.query_params.get("language", "auto")
+    logger.info(f"New WebSocket connection with language: {language}")
+    
     audio_processor = AudioProcessor(
         transcription_engine=transcription_engine,
+        language=language
     )
     await websocket.accept()
     logger.info("WebSocket connection opened.")

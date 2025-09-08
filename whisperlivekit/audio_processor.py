@@ -22,16 +22,11 @@ class AudioProcessor:
     Handles audio processing, state management, and result formatting.
     """
     
-    def __init__(self, **kwargs):
+    def __init__(self, transcription_engine: TranscriptionEngine, language: str = "auto", **kwargs):
         """Initialize the audio processor with configuration, models, and state."""
         
-        if 'transcription_engine' in kwargs and isinstance(kwargs['transcription_engine'], TranscriptionEngine):
-            models = kwargs['transcription_engine']
-        else:
-            models = TranscriptionEngine(**kwargs)
-        
         # Audio processing settings
-        self.args = models.args
+        self.args = transcription_engine.args
         self.sample_rate = 16000
         self.channels = 1
         self.samples_per_sec = int(self.sample_rate * self.args.min_chunk_size)
@@ -58,10 +53,13 @@ class AudioProcessor:
         self.last_response_content = ""
         
         # Models and processing
-        self.asr = models.asr
-        self.tokenizer = models.tokenizer
-        self.vac_model = models.vac_model
-        self.vac = FixedVADIterator(models.vac_model)
+        self.asr = transcription_engine.asr
+        self.asr.original_language = language # change language
+        if self.args.backend == "simulstreaming":
+            self.asr
+        self.tokenizer = transcription_engine.tokenizer
+        self.vac_model = transcription_engine.vac_model
+        self.vac = FixedVADIterator(transcription_engine.vac_model)
 
             
         self.ffmpeg_manager = FFmpegManager(
@@ -86,14 +84,12 @@ class AudioProcessor:
         self.ffmpeg_reader_task = None
         self.watchdog_task = None
         self.all_tasks_for_cleanup = []
-        
-        # Initialize transcription engine if enabled
-        if self.args.transcription:
-            self.online = online_factory(self.args, models.asr, models.tokenizer)
+
+        self.online = online_factory(self.args, transcription_engine.asr, transcription_engine.tokenizer)
             
         # Initialize diarization engine if enabled
         if self.args.diarization:
-            self.diarization = online_diarization_factory(self.args, models.diarization_model)
+            self.diarization = online_diarization_factory(self.args, transcription_engine.diarization_model)
 
 
     def convert_pcm_to_float(self, pcm_buffer):
