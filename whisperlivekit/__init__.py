@@ -9,5 +9,4 @@ __all__ = [
     "parse_args",
     "get_web_interface_html",
     "get_inline_ui_html",
-    "download_simulstreaming_backend",
 ]
