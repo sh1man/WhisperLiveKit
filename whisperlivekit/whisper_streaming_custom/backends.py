@@ -4,8 +4,8 @@ import logging
 from typing import List
 import numpy as np
 from whisperlivekit.timed_objects import ASRToken
-from whisperlivekit.whisper_streaming_custom.bad_words import BAD_WORDS
-from whisperlivekit.whisper_streaming_custom.skip_words import SKIP_WORDS
+from .bad_words import BAD_WORDS
+from .skip_words import SKIP_WORDS
 
 logger = logging.getLogger(__name__)
 
