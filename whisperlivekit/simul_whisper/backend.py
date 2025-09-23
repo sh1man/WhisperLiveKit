@@ -221,7 +221,7 @@ class SimulStreamingOnlineProcessor:
         # self.asr.new_model_to_stack()
         self.model.remove_hooks()
 
-class SimulStreamingASR():
+class SimulStreamingASR:
     """SimulStreaming backend with AlignAtt policy."""
     sep = ""
 

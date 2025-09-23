@@ -507,7 +507,8 @@ function renderLinesWithBuffer(
           remaining_time_diarization
         )}</span> second(s) of audio are undergoing diarization</span></span>`;
       } else if (item.speaker !== 0) {
-        speakerLabel = `<span id="speaker">Speaker ${item.speaker}<span id='timeInfo'>${timeInfo}</span></span>`;
+          speakerLabel = `<span id="speaker">Говорящий<span id='timeInfo'>${timeInfo}</span></span>`;
+        // speakerLabel = `<span id="speaker">Speaker ${item.speaker}<span id='timeInfo'>${timeInfo}</span></span>`;
       }
 
       let currentLineText = item.text || "";

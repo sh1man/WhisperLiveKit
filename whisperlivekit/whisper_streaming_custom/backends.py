@@ -1,8 +1,11 @@
+import re
 import sys
 import logging
 from typing import List
 import numpy as np
 from whisperlivekit.timed_objects import ASRToken
+from whisperlivekit.whisper_streaming_custom.constants.bad_words import BAD_WORDS
+from whisperlivekit.whisper_streaming_custom.constants.skip_words import SKIP_WORDS
 
 logger = logging.getLogger(__name__)
 
@@ -82,6 +85,17 @@ class FasterWhisperASR(ASRBase):
         for segment in segments:
             if segment.no_speech_prob > 0.9:
                 continue
+                
+            segment_detail = (
+                f"[{segment.start:.2f}s -> {segment.end:.2f}s] {segment.text}"
+            )
+            if any(re.search(bad_pattern, segment.text, re.IGNORECASE) for bad_pattern in BAD_WORDS):
+                logging.info(f"Найдено bad слово/паттерн в сегменте: {segment_detail}")
+                continue
+            if any(re.fullmatch(skip_pattern, segment.text, re.IGNORECASE) for skip_pattern in SKIP_WORDS):
+                logging.info(f"Найден skip паттерн (полное совпадение) в сегменте: {segment_detail}")
+                continue
+
             for word in segment.words:
                 token = ASRToken(word.start, word.end, word.word, probability=word.probability)
                 tokens.append(token)
