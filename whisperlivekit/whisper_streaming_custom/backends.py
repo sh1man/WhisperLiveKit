@@ -4,8 +4,8 @@ import logging
 from typing import List
 import numpy as np
 from whisperlivekit.timed_objects import ASRToken
-from whisperlivekit.whisper_streaming_custom.constants.bad_words import BAD_WORDS
-from whisperlivekit.whisper_streaming_custom.constants.skip_words import SKIP_WORDS
+from whisperlivekit.whisper_streaming_custom.bad_words import BAD_WORDS
+from whisperlivekit.whisper_streaming_custom.skip_words import SKIP_WORDS
 
 logger = logging.getLogger(__name__)
 
@@ -85,7 +85,7 @@ class FasterWhisperASR(ASRBase):
         for segment in segments:
             if segment.no_speech_prob > 0.9:
                 continue
-                
+
             segment_detail = (
                 f"[{segment.start:.2f}s -> {segment.end:.2f}s] {segment.text}"
             )
